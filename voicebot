@@ -1,1 +1,460 @@
 
+import subprocess
+import sys
+from time import ctime
+import time
+import speech_recognition as sr
+import pyttsx3
+import pyjokes
+import webbrowser
+import os
+import datetime
+import pywhatkit 
+import wikipedia
+from GoogleNews import GoogleNews
+from googletrans import Translator
+import pyautogui
+import requests
+import pyperclip
+import pygetwindow as gw
+import platform
+import psutil
+from tkinter import *
+
+
+# Define assistant and boss names
+assis_name = "lexa"
+boss_name = "Revathi"
+
+def say(text, lang='en'):
+    engine.setProperty('rate', 150)
+    engine.setProperty('voice', lang)
+    engine.say(text)
+    engine.runAndWait()
+
+# Initialize the text-to-speech engine
+engine = pyttsx3.init()
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[1].id)
+
+# Function to say a given text
+def say(text):
+    engine.say(text)
+    engine.runAndWait()
+
+# Initialize the translator
+translator = Translator()
+def get_device_info():
+    system = platform.system()
+    release = platform.release()
+    version = platform.version()
+    machine = platform.machine()
+    processor = platform.processor()
+    architecture = platform.architecture()[0]
+    info = f"System: {system}\nRelease: {release}\nVersion: {version}\nMachine: {machine}\nProcessor: {processor}\nArchitecture: {architecture}"
+    return info
+
+# Function to recognize voice commands
+def take_command():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        recognizer.adjust_for_ambient_noise(source, duration=1)
+        print("Listening.......")
+        recognizer.pause_threshold = 1
+        audio = recognizer.listen(source)
+        try:
+            print("Recognizing.............")
+            text = recognizer.recognize_google(audio, language='en-in')
+            print(f"User said : {text}\n")
+            return text.lower()
+        except sr.UnknownValueError:
+           print("Could not understand audio please check on the mic ")
+           say("Could not understand audio please check on the mic ")
+        except sr.RequestError as e:
+            print(f"Could not request results; {e}")
+    return ""
+def open_word(filename):
+    try:
+        os.startfile(filename)
+        say("Opening word file")
+    except Exception as e:
+        print("Error opening word file:", str(e))
+        say("Sorry, I couldn't open the word file")
+
+def open_excel(filename):
+    try:
+        os.startfile(filename)
+        say("Opening excel file")
+    except Exception as e:
+        print("Error opening excel file:", str(e))
+        say("Sorry, I couldn't open the excel file")
+
+def increase_volume():
+    pyautogui.press('volumeup')
+
+    
+# Function to tell a joke
+def tell_joke():
+    joke = pyjokes.get_joke()
+    return joke
+
+# Function to get the current time
+def get_time():
+    current_time = datetime.datetime.now().strftime("%I:%M:%S")
+    return current_time
+
+# Function to get the current date
+def get_date():
+    current_date = datetime.datetime.now().strftime("%m/%d/%Y")
+    return current_date
+
+# Function to greet based on the time of day
+def wishing():
+    current_hour = datetime.datetime.now().hour
+    if 0 <= current_hour < 12:
+        wish = "Good Morning"
+    elif 12 <= current_hour < 15:
+        wish = "Good Afternoon"
+    elif 15 <= current_hour < 19:
+        wish = 'Good Evening'
+    else:
+        wish = "Good Night"
+
+    
+    return wish
+
+def translate_text(text, target_language='en'):
+    try:
+        # Detect the language of the input text
+        detected_lang = translator.detect(text).lang
+        
+        # Translate the text to the target language
+        translated_text = translator.translate(text, src=detected_lang, dest=target_language).text
+        
+        return translated_text
+    except Exception as e:
+        return str(e)
+   
+def get_weather():
+    api_key = 'af9384d80410bcfc811c89f72f2b5d8f'
+
+# Specify the city and country code for which you want weather information
+    city_name = 'Tirunelveli'
+    country_code = 'IN'
+
+# Create the API URL
+    base_url = 'http://api.openweathermap.org/data/2.5/weather'
+    params = {'q': f'{city_name},{country_code}', 'appid': api_key, 'units': 'metric'}  # You can change 'units' to 'imperial' for Fahrenheit
+
+# Send a GET request to the API
+    response = requests.get(base_url, params=params)
+
+# Check if the request was successful (status code 200)
+    if response.status_code == 200:
+                data = response.json()
+    # Extract relevant weather data from the response
+                temperature = data['main']['temp']
+                weather_description = data['weather'][0]['description']
+                print(f'Temperature: {temperature}°C')
+                say(f'Temperature: {temperature}°C')
+
+                print(f'Weather Description: {weather_description}')
+                say(f'Weather Description: {weather_description}')
+    else:
+                print('Error:', response.status_code)
+def close_all_windows():
+    wis = gw.getAllWindows()
+    for w in wis:
+        w.close()
+
+
+def open_notepad():
+    os.system("start notepad")
+def save_notepad_document(file_name):
+    # Press Ctrl + S to open the Save dialog
+    pyautogui.hotkey('ctrl', 's')
+    pyautogui.write(file_name)
+    pyautogui.press('enter')
+
+def write_text(text):
+    pyautogui.write(text)
+
+def close_notepad():
+    for process in psutil.process_iter(attrs=['pid', 'name']):
+        if process.info['name'] == 'notepad.exe':
+            pid = process.info['pid']
+            psutil.Process(pid).terminate()
+            print("Notepad has been closed.")
+    return
+
+def read_active_window_content():
+    global stop_reading
+    active_window = gw.getActiveWindow()
+    window_title = active_window.title
+
+    if "notepad" in window_title.lower():
+        active_window.activate()
+        pyautogui.hotkey('ctrl', 'a')
+        pyautogui.hotkey('ctrl', 'c')
+        content = pyperclip.paste()
+
+        if content:
+            say("The content in the Notepad window is:")
+            say(content)
+        else:
+            say("The Notepad is empty")
+    else:
+        say("Sorry, this functionality is currently supported only for Notepad windows.")
+
+def open_ppt(filename):
+    try:
+        os.startfile(filename)
+        say("Opening PowerPoint")
+    except Exception as e:
+        print("Error opening word file:", str(e))
+        say("Sorry, I couldn't open the PowerPoint file")
+def decrease_volume():
+    pyautogui.press('volumedown')
+
+
+def send_whatsapp_message(contact_name, message):
+    pywhatkit.sendwhatmsg(contact_name, message, 0, 0)
+
+def search_item_on_amazon(item):
+    search_url = f"https://www.amazon.com/s?k={item.replace(' ', '+')}"
+    webbrowser.open(search_url, new=2)  # Open in a new tab
+    
+# Function to fetch and display news headlines
+def get_headlines(category):
+    googlenews = GoogleNews()
+    engine.say('Getting news for you ')
+    engine.runAndWait()
+    googlenews.get_news(category)
+    googlenews.result()
+    headlines = googlenews.gettext()
+    return headlines[1:5]
+
+if __name__ == "__main__":
+    
+    say("hi!,I am Lexa how can i help you")
+    print("hi!,I am Lexa how can i help you")
+    say("now the time is")
+    print("The Time is:", get_time())
+    say(get_time())
+    print("The Date is:", get_date())
+    say("And date is")
+    say(get_date())
+    say(wishing())
+    print(wishing())
+
+    while True:
+        text = take_command()
+        if text:
+            if "what time is it" in text:
+                current_time = datetime.datetime.now().strftime("%I:%M %p")
+                say(f"The current time is {current_time}")
+                print(f"The current time is {current_time}")
+            elif "good morning" in text:
+                say("A warm " + text)
+                print("A warm " + text)
+                say("How are you " + boss_name + "?")
+                print("How are you " + boss_name + "?")
+            elif "good afternoon" in text:
+                say("hope you have an amazing afternoon")
+                print("hope you have an amazing afternoon")
+            elif "good Night" in text:
+                say("yeah " + text)
+                say("Good luck for tommorow" + boss_name + "?")
+                print("yeah " + text)
+                print("Good luck for tommorow" + boss_name + "?")
+            elif "take a screenshot" in text:
+                pyautogui.screenshot("screenshot.png")  
+                say("I took a screenshot for you")
+                print("I took a screenshot for you")  
+            elif "who are you" in text:
+                say("My name is {}".format (assis_name ))
+                say(" My Boss Name is {}".format(boss_name))
+                print("My name is {}".format (assis_name ))
+                print(" My Boss Name is {}".format(boss_name))
+            
+            elif "thank you" in text:
+               say("You're welcome! If you have any more questions or tasks, feel free to ask.")
+               print("You're welcome! If you have any more questions or tasks, feel free to ask.")
+            elif 'fine' in text:
+                say("It's good to know that you're fine")
+                print("It's good to know that you're fine")
+            elif "how are you" in text:
+                say("I'm just a computer program, but I'm here to assist you. How can I help you today?")
+                print("I'm just a computer program, but I'm here to assist you. How can I help you today?")
+            elif 'tell me a joke' in text:
+                say(tell_joke())
+                print(tell_joke())
+            elif 'play' in text:
+                song = text.replace("play", "").strip()
+                say("Playing " + song)
+                pywhatkit.playonyt(song)
+                print("Playing " + song)
+            elif "volume down"in text:
+                decrease_volume()
+            elif "nothing" in text or "abort" in text or "stop" in text:
+                say("okay")
+                say("Bye , have a good day.")
+                print("okay")
+                print("Bye , have a good day.")
+                sys.exit()
+
+            elif 'search' in text:
+                item = text.replace("search", "").strip()
+                say("Searching for '{item}' on Amazon...")
+                print(f"Searching for '{item}' on Amazon...")
+                search_item_on_amazon(item)
+            elif 'price of' in text:
+                search_term = text.split("price of")[-1].strip()
+                print(f"Searching for the price of '{search_term}' on Google...")
+                search_url = "https://www.google.com/search?q=price of " + search_term
+                webbrowser.open(search_url, new=2)  # Open in a new tab
+                say("Here is what I found for the price of " + search_term + " on Google.")
+                print("Here is what I found for the price of " + search_term + " on Google.")
+           
+            elif any(phrase in text for phrase in ["open my mail", "gmail", "check my email"]):
+                url = "https://mail.google.com/mail/u/0/#inbox"
+                webbrowser.open(url)
+                say("Here you can check your Gmail.")
+                print("Here you can check your Gmail.")
+            elif 'open google' in text:
+                text = text.replace("search", "").strip()
+                say("opening google")
+                print("opening google")
+                webbrowser.open("google.com")
+            elif 'open w3schools' in text:
+                text = text.replace("search", "").strip()
+                say("opening the website")
+                print("opening the website")
+                webbrowser.open("https://www.w3schools.com/")
+            elif "tell me about" in text:
+                topic = text.replace("tell me about", '')
+                try:
+                    info = wikipedia.summary(topic, sentences=2)
+                    print(info)
+                    say(info)
+                except wikipedia.exceptions.PageError:
+                    print("Sorry, I couldn't find any information about that.")
+                    say("Sorry, I couldn't find any information about that.")
+            elif "volume up" in text:
+                increase_volume()
+            elif "open ppt" in text:
+                say("Opening PowerPoint viewer")
+                filename = r"C:\\ProgramData\\Microsoft\Windows\Start Menu\\Programs\\Microsoft Office\\Microsoft Office PowerPoint 2007.lnk"
+                open_ppt(filename)
+            elif "open word" in text:
+                say("Opening word document")
+                filename = r"C:\\ProgramData\\Microsoft\Windows\Start Menu\\Programs\\Microsoft Office\\Microsoft Office Word 2007.lnk"
+                open_word(filename)
+            elif "open excel" in text:
+                say("Opening excel document")
+                filename = r"C:\\ProgramData\\Microsoft\Windows\Start Menu\\Programs\\Microsoft Office\\Microsoft Office Excel 2007.lnk"
+                open_excel(filename)    
+            elif 'translate' in text:
+                say("Sure, please say the text to translate.")
+                print("Sure, please say the text to translate.")
+                text_to_translate = take_command()
+                say("Enter the target language code (e.g. Spanish or French):")
+                print("Enter the target language code (e.g. Spanish or French):")
+                target_language = take_command()
+                translated_text = translate_text(text_to_translate, target_language)
+                say(f"The translation for: {text_to_translate}")
+                say(f"in: {target_language}")
+                say(f"is:{translated_text}")
+                print(f"The translation for: {text_to_translate}")
+                print(f"in: {target_language}")
+                print(f"is:{translated_text}")
+            elif 'open notepad' in text:
+                open_notepad()
+                say("Opening Notepad")
+                print("Opening Notepad")
+                print("Opened Notepad.")
+
+            elif "close notepad" in text:
+                close_notepad()
+                say("Notepad has been closed.")
+                print("Notepad has been closed.")
+            
+            elif 'save notepad' in text:
+                say("Please say the file name to save in Notepad.")
+                print("Please say the file name to save in Notepad.")
+                file_name = take_command()
+                save_notepad_document(file_name)
+                say(f"Saved the document in Notepad as: {file_name}")
+                print(f"Saved the document in Notepad as: {file_name}")
+            elif 'write on notepad' in text:
+                say("Please say the text to write.")
+                print("Please say the text to write.")
+                text_to_write = take_command()
+                write_text(text_to_write)
+                say(f"Wrote: {text_to_write}")
+                print(f"Wrote: {text_to_write}")
+            elif 'news' in text:
+                say("Sure, which category of news would you like? (tech/politics/sports/cricket)")
+                print("Sure, which category of news would you like? (tech/politics/sports/cricket)")
+                category = take_command()
+                if category in ['tech', 'politics', 'sports', 'cricket']:
+                    say(f"Getting {category} news headlines for you.")
+                    print(f"Getting {category} news headlines for you.")
+                    headlines = get_headlines(category)
+                    say("Here are the top headlines:")
+                    print("Here are the top headlines:")
+                    for headline in headlines:
+                        say(headline)
+                        print(headline)
+                else:
+                    say("I'm sorry, I don't have news in that category.")
+                    print("I'm sorry, I don't have news in that category.")
+
+            elif'read active window content' in text:
+               read=read_active_window_content()
+               say(read)
+               print(read)
+            elif 'get device information' in text:
+                device_info = get_device_info()
+                say(device_info)
+                print(device_info)
+            elif 'open stackoverflow' in text:
+                say("Here you go to Stack Over flow.Happy coding")
+                print("Here you go to Stack Over flow.Happy coding")
+                webbrowser.open("stackoverflow.com")
+                          
+            elif 'get weather' in text:
+                get_weather()
+            elif'send whatsapp message' in text:
+                say("Who do you want to send the message to?")
+                print("Who do you want to send the message to?")
+                whatscontact = take_command()
+                say("What message would you like to send?")
+                message = take_command()
+                # Calculate the time 2 minutes from now
+                current_time = datetime.datetime.now()
+                send_time = current_time + datetime.timedelta(minutes=1)
+                # Schedule the WhatsApp message
+                pywhatkit.sendwhatmsg(whatscontact, message, send_time.hour, send_time.minute)
+                say(f"WhatsApp message to {whatscontact} sent")
+                print(f"WhatsApp message to {whatscontact} sent.")
+
+            elif "where is" in text:
+                location = text.replace("where is", "").strip()
+                say(f"User asked to locate {location}")
+                print(f"User asked to locate {location}")
+                webbrowser.open(f"https://www.google.com/maps/place/{location}")
+            
+            elif 'close' in text:
+                say("Closing the current window")
+                active_window = gw.getActiveWindow()
+                active_window.close()
+
+else:
+            print("if you have any questions feel free to ask")
+            say("kindly please check on the mic") 
+            say("if you have any questions feel free to ask")
+
+
+
+
